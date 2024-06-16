@@ -1,4 +1,5 @@
 require 'rubygo/model/greeting'
+require 'rubygo/model/settings'
 
 class Rubygo
   module View
@@ -16,6 +17,7 @@ class Rubygo
       #
       before_body do
         @greeting = Model::Greeting.new
+        @settings = Model::Settings.new
 
         menu('File') {
           menu_item('Preferences...') {
@@ -56,8 +58,9 @@ class Rubygo
       body {
         window {
           # Replace example content below with your own custom window content
-          content_size 8*80, 8*80
-          title 'RubyGo'
+          width <= [@settings, :num_cols, on_read: -> (num_cols) {num_cols * @settings.board_scale}] 
+          height <= [@settings, :num_rows, on_read: -> (num_rows){num_rows * @settings.board_scale}]
+          title 'Ruby Go'
           resizable false
 
           margined true
@@ -67,19 +70,21 @@ class Rubygo
           }
           vertical_box {
             padded false
-            8.times.map do |row|
+            @settings.num_rows.times.map do |row|
               horizontal_box {
                 padded false
 
-                8.times.map do |column|
+                @settings.num_cols.times.map do |column|
+                  scale = @settings.board_scale
+                  half = scale / 2
                   area {
-                    square(0, 0, 80) {
+                    square(0, 0, scale) {
                       fill r: 240, g: 215, b: 141, a: 1.0
                     }
-                    line(40,row == 0 ? 40 : 0, 40, row == 7 ? 40 : 80) {
+                    line(half,row == 0 ? half : 0, half, row == (@settings.num_rows - 1)? half : scale) {
                       stroke 0x000000
                     } 
-                    line(column == 0 ? 40 : 0,40, column == 7 ? 40 : 80, 40){
+                    line(column == 0 ? half : 0, half, column == (@settings.num_cols - 1) ? half : scale, half){
                       stroke 0x000000
                     } 
                   }

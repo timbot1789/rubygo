@@ -1,26 +1,77 @@
-Cell = Struct.new (:player)
+Cell = Struct.new(:player, :row, :column)
 
 class Rubygo
   module Model
     class Game 
       
-      attr_accessor :height, :width, :scale, :name, :tokens, :cur_player
+      attr_accessor :height, :width, :scale, :name, :tokens, :cur_player, :white_score, :black_score
       
       def initialize(height = 19, width = 19, scale = 90, name = "Go Game")
         @height = height
         @width = width
         @scale = scale - width - height
-        @tokens = height.times.map do
-          width.times.map do
-            Cell.new(0) 
+        @tokens = @height.times.map do |row|
+          @width.times.map do |column|
+            Cell.new(0, row, column) 
           end
         end
         @cur_player = 1
       end
 
+      def find_capture_group(group)
+        cell = group.last
+        return [] if cell.row > 0 && @tokens[cell.row - 1][cell.column].player == 0 
+        return [] if cell.column > 0 && @tokens[cell.row][cell.column - 1].player == 0 
+        return [] if cell.row < @height && @tokens[cell.row + 1][cell.column].player == 0 
+        return [] if cell.column < @width && @tokens[cell.row][cell.column + 1].player == 0 
+
+        if (cell.row > 0) && (@tokens[cell.row - 1][cell.column].player == cell.player) && (!group.include? @tokens[cell.row - 1][cell.column])
+          up = find_capture_group(group.push(@tokens[cell.row - 1][cell.column]))
+          return [] if up.empty?
+        end
+        if (cell.column > 0) && (@tokens[cell.row][cell.column - 1].player == cell.player) && (!group.include? @tokens[cell.row][cell.column - 1])
+          left = find_capture_group(group.push(@tokens[cell.row][cell.column - 1]))
+          return [] if left.empty?
+        end
+        if (cell.row < @height) && (@tokens[cell.row + 1][cell.column].player == cell.player) && (!group.include? @tokens[cell.row + 1][cell.column])
+          down = find_capture_group(group.push(@tokens[cell.row + 1][cell.column]))
+          return [] if down.empty?
+        end
+        if (cell.column < @width) && (@tokens[cell.row][cell.column + 1].player == cell.player) && (!group.include? @tokens[cell.row][cell.column + 1])
+          right = find_capture_group(group.push(@tokens[cell.row][cell.column + 1]))
+          return [] if right.empty?
+        end
+        group
+      end
+
+      def capture(cell)
+        to_capture = []
+        if cell.row > 0 && (@tokens[cell.row - 1][cell.column].player != cell.player)
+          to_capture.concat find_capture_group([@tokens[cell.row - 1][cell.column]])
+        end
+        if (cell.column > 0) && (!to_capture.include? @tokens[cell.row][cell.column - 1]) && (@tokens[cell.row][cell.column - 1].player != cell.player)
+          to_capture.concat find_capture_group([@tokens[cell.row][cell.column - 1]])
+        end
+        if (cell.row < @height) && (!to_capture.include? @tokens[cell.row + 1][cell.column]) && (@tokens[cell.row + 1][cell.column].player != cell.player)
+          to_capture.concat find_capture_group([@tokens[cell.row + 1][cell.column]])
+        end
+        if (cell.column < @width) && (!to_capture.include? @tokens[cell.row][cell.column + 1]) && (@tokens[cell.row][cell.column + 1].player != cell.player)
+          to_capture.concat find_capture_group([@tokens[cell.row][cell.column + 1]])
+        end
+        to_capture.each {|cell| cell.player = 0}
+
+      end
+
       def play(row, column)
-        return unless @tokens[row][column][:player] == 0 
+        return unless @tokens[row][column][:player] == 0
         @tokens[row][column][:player] = @cur_player
+        cell = @tokens[row][column]
+        capture(cell)
+        capture_group = find_capture_group([cell])
+        unless capture_group.empty?
+          @tokens[row][column][:player] = 0
+          return
+        end
         @cur_player = -@cur_player
       end
     end
@@ -137,6 +188,7 @@ class Rubygo
                 @game.height = game.height
                 @game.width = game.width
                 @game.tokens = game.tokens
+                @game.cur_player = 1
               }
               new_game_window(on_create: on_create, height: @game.height, width: @game.width).show
             end

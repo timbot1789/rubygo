@@ -6,10 +6,10 @@ class Rubygo
       
       attr_accessor :height, :width, :scale, :name, :tokens, :cur_player
       
-      def initialize(height = 12, width = 12, scale = 70, name = "Go Game")
+      def initialize(height = 19, width = 19, scale = 90, name = "Go Game")
         @height = height
         @width = width
-        @scale = scale
+        @scale = scale - width - height
         @tokens = height.times.map do
           width.times.map do
             Cell.new(0) 
@@ -89,13 +89,13 @@ class Rubygo
               vertical_box {
                   horizontal_box {
                     label('Board Width')
-                    spinbox(2, 20) {
+                    spinbox(1, 20) {
                       value <=> [self, :width]
                     }
                   }
                   horizontal_box {
                     label('Board Height')
-                    spinbox(2, 20) {
+                    spinbox(1, 20) {
                       value <=> [self, :height]
                     }
                   }
@@ -138,7 +138,7 @@ class Rubygo
                 @game.width = game.width
                 @game.tokens = game.tokens
               }
-              new_game_window(on_create: on_create).show
+              new_game_window(on_create: on_create, height: @game.height, width: @game.width).show
             end
           }
           menu_item('Load Game')

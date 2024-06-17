@@ -17,6 +17,12 @@ class Rubygo
         end
         @cur_player = 1
       end
+
+      def play(row, column)
+        return unless @tokens[row][column][:player] == 0 
+        @tokens[row][column][:player] = @cur_player
+        @cur_player = -@cur_player
+      end
     end
   end
 end
@@ -39,8 +45,7 @@ class Rubygo
                   square(0, 0, game.scale) {
                     fill r: 240, g: 215, b: 141, a: 1.0
                     on_mouse_up do |clicked_event|
-                      game.tokens[row][column][:player] = game.cur_player
-                      game.cur_player = -game.cur_player
+                      game.play(row, column)
                     end
                   }
                   line(half,row == 0 ? half : 0, half, row == (game.height - 1)? half : game.scale) {

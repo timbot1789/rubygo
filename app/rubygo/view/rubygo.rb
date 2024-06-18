@@ -25,12 +25,8 @@ class Rubygo
       end
 
       def pass
-        if @has_passed
-          self.game_over = true
-          return
-        end
+        return self.game_over = true if @has_passed
 
-        puts "Passed. Game Over? #{self.game_over}"
         self.cur_player = -self.cur_player
         @has_passed = true
       end
@@ -156,6 +152,9 @@ class Rubygo
                       game.play(row, column)
                     end
                   }
+                  if (row % 3 == 0) && (column % 3 == 0) && (row % 2 != 0) && (column % 2 != 0) 
+                    circle(half, half, 4) { fill :black }
+                  end
                   line(half,row == 0 ? half : 0, half, row == (game.height - 1)? half : game.scale) {
                     stroke 0x000000
                   } 
@@ -170,9 +169,6 @@ class Rubygo
                     } ]
                     
                   }
-                  if (row % 3 == 0) && (column % 3 == 0) && (row % 2 != 0) && (column % 2 != 0) 
-                    circle(half, half, 4) { fill :black }
-                  end
                 }
               end
             }

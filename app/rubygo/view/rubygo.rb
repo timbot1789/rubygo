@@ -201,13 +201,13 @@ class Rubygo
                   horizontal_box {
                     label('Board Width')
                     spinbox(1, 20) {
-                      value <=> [self, :width, on_read: -> (width){width + 30}]
+                      value <=> [self, :width]
                     }
                   }
                   horizontal_box {
                     label('Board Height')
                     spinbox(1, 20) {
-                      value <=> [self, :height, on_read: -> (height){height + 30}]
+                      value <=> [self, :height]
                     }
                   }
               }

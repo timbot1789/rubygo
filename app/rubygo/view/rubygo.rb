@@ -5,20 +5,42 @@ class Rubygo
     class Game 
       
       attr_reader :white_score, :black_score
-      attr_accessor :height, :width, :scale, :name, :tokens, :cur_player
+      attr_accessor :height, :width, :scale, :name, :tokens, :cur_player, :game_over
       
-      def initialize(height = 19, width = 19, scale = 80, name = "Go Game", white_score = 0, black_score = 0)
+      def initialize(height = 19, width = 19, scale = 85, name = "Go Game", white_score = 0, black_score = 0)
         @height = height
         @width = width
+        @game_over = false
         @scale = scale - width - height
         @white_score = white_score
-        @black_score = black_score 
+        @has_passed = false
+        @black_score = black_score
         @tokens = @height.times.map do |row|
           @width.times.map do |column|
             Cell.new(0, row, column) 
           end
         end
         @cur_player = 1
+      end
+
+      def pass
+        if @has_passed
+          self.game_over = true
+          return
+        end
+
+        puts "Passed. Game Over? #{self.game_over}"
+        self.cur_player = -self.cur_player
+        @has_passed = true
+      end
+      
+      def reset
+        self.game_over = false
+        @has_passed = false
+        self.cur_player = 1
+        tokens.each do |col|
+          col.each { |cell| cell[:player] = 0 }
+        end
       end
 
       def find_capture_group(group)
@@ -47,6 +69,20 @@ class Rubygo
         group
       end
 
+      def play(row, column)
+        return if self.game_over
+        return unless self.tokens[row][column][:player] == 0
+        self.tokens[row][column][:player] = self.cur_player
+        cell = self.tokens[row][column]
+        self.capture(cell)
+        capture_group = self.find_capture_group([cell])
+        unless capture_group.empty?
+          self.tokens[row][column][:player] = 0
+          return
+        end
+        self.cur_player = -self.cur_player
+      end
+
       def capture(cell)
         to_capture = []
         if cell.row > 0 && (@tokens[cell.row - 1][cell.column].player != cell.player)
@@ -62,21 +98,8 @@ class Rubygo
           to_capture.concat find_capture_group([@tokens[cell.row][cell.column + 1]])
         end
         to_capture.each {|cell| cell.player = 0}
-
       end
 
-      def play(row, column)
-        return unless @tokens[row][column][:player] == 0
-        @tokens[row][column][:player] = @cur_player
-        cell = @tokens[row][column]
-        capture(cell)
-        capture_group = find_capture_group([cell])
-        unless capture_group.empty?
-          @tokens[row][column][:player] = 0
-          return
-        end
-        self.cur_player = -@cur_player
-      end
     end
   end
 end
@@ -86,6 +109,7 @@ class Rubygo
     class GameBoard
       include Glimmer::LibUI::CustomControl
       option :game
+
 
       body{
         vertical_box {
@@ -144,13 +168,13 @@ class Rubygo
                   horizontal_box {
                     label('Board Width')
                     spinbox(1, 20) {
-                      value <=> [self, :width]
+                      value <=> [self, :width, on_read: -> (width){width + 30}]
                     }
                   }
                   horizontal_box {
                     label('Board Height')
                     spinbox(1, 20) {
-                      value <=> [self, :height]
+                      value <=> [self, :height, on_read: -> (height){height + 30}]
                     }
                   }
               }
@@ -168,6 +192,31 @@ class Rubygo
                   new_game_window.destroy
                 end
               }
+            }
+          }
+        }
+      }
+    end
+  end
+end
+
+class Rubygo
+  module View
+    class GameOverWindow
+      include Glimmer::LibUI::CustomWindow
+      option :restart, default: lambda {}
+      
+      body {
+        window { |game_over_window|
+          title "Game Over"
+          margined true
+          vertical_box {
+            label("Game Over")
+            button("New Game") {
+              on_clicked do
+                restart.call()
+                game_over_window.destroy
+              end
             }
           }
         }
@@ -216,10 +265,16 @@ class Rubygo
             end
           }
         }
+        observe(@game, :game_over) do |game_over|
+          restart = lambda {
+            @game.reset
+          }
+          game_over_window(restart: restart).show if game_over
+        end
       end
 
       body {
-        window {
+        window { 
           width <= [@game, :width, on_read: -> (width) {width * @game.scale}] 
           height <= [@game, :height, on_read: -> (height) {height * @game.scale}]
           title 'Ruby Go'
@@ -232,6 +287,11 @@ class Rubygo
               label {
                 text <= [@game, :cur_player, on_read: -> (player) {"Current Player: #{player == 1 ? "White" : "Black"}"}]
               } 
+              button('Pass Turn') {
+                on_clicked do
+                  @game.pass
+                end
+              }
             }
             vertical_box {
               content(@game, :tokens) {
@@ -241,6 +301,7 @@ class Rubygo
           }
         }
       }
+
 
       def display_about_dialog
         message = "Rubygo #{VERSION}\n\n#{LICENSE}"

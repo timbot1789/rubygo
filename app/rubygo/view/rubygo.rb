@@ -1,4 +1,4 @@
-Cell = Struct.new(:player, :row, :column)
+Cell = Struct.new(:player, :row, :column, :dead)
 
 class Rubygo
   module Model
@@ -41,30 +41,34 @@ class Rubygo
         end
       end
 
-      def find_capture_group(group)
+      def find_group(group)
         cell = group.last
         return [] if cell.row > 0 && @tokens[cell.row - 1][cell.column].player == 0 
         return [] if cell.column > 0 && @tokens[cell.row][cell.column - 1].player == 0 
-        return [] if cell.row < @height && @tokens[cell.row + 1][cell.column].player == 0 
-        return [] if cell.column < @width && @tokens[cell.row][cell.column + 1].player == 0 
+        return [] if cell.row < (@height - 1) && @tokens[cell.row + 1][cell.column].player == 0 
+        return [] if cell.column < (@width - 1) && @tokens[cell.row][cell.column + 1].player == 0 
 
         if (cell.row > 0) && (@tokens[cell.row - 1][cell.column].player == cell.player) && (!group.include? @tokens[cell.row - 1][cell.column])
-          up = find_capture_group(group.push(@tokens[cell.row - 1][cell.column]))
+          up = find_group(group.push(@tokens[cell.row - 1][cell.column]))
           return [] if up.empty?
         end
         if (cell.column > 0) && (@tokens[cell.row][cell.column - 1].player == cell.player) && (!group.include? @tokens[cell.row][cell.column - 1])
-          left = find_capture_group(group.push(@tokens[cell.row][cell.column - 1]))
+          left = find_group(group.push(@tokens[cell.row][cell.column - 1]))
           return [] if left.empty?
         end
-        if (cell.row < @height) && (@tokens[cell.row + 1][cell.column].player == cell.player) && (!group.include? @tokens[cell.row + 1][cell.column])
-          down = find_capture_group(group.push(@tokens[cell.row + 1][cell.column]))
+        if (cell.row < (@height - 1)) && (@tokens[cell.row + 1][cell.column].player == cell.player) && (!group.include? @tokens[cell.row + 1][cell.column])
+          down = find_group(group.push(@tokens[cell.row + 1][cell.column]))
           return [] if down.empty?
         end
-        if (cell.column < @width) && (@tokens[cell.row][cell.column + 1].player == cell.player) && (!group.include? @tokens[cell.row][cell.column + 1])
-          right = find_capture_group(group.push(@tokens[cell.row][cell.column + 1]))
+        if (cell.column < (@width - 1)) && (@tokens[cell.row][cell.column + 1].player == cell.player) && (!group.include? @tokens[cell.row][cell.column + 1])
+          right = find_group(group.push(@tokens[cell.row][cell.column + 1]))
           return [] if right.empty?
         end
         group
+      end
+
+      def num_eyes(cell)
+
       end
 
       def is_ko? 
@@ -80,7 +84,7 @@ class Rubygo
       end 
 
       def is_suicide?(cell)
-        capture_group = self.find_capture_group([cell])
+        capture_group = self.find_group([cell])
         return !capture_group.empty?
       end
 
@@ -97,7 +101,9 @@ class Rubygo
       end
 
       def play(row, column)
-        return if self.game_over
+        if self.game_over && self.tokens[row][column].player != 0
+          return self.tokens[row][column].dead = !self.tokens[row][column].dead
+        end
         return unless self.tokens[row][column][:player] == 0
         @history.push @tokens.map { |arr| arr.map {|cell| cell.clone }}
         self.tokens[row][column][:player] = self.cur_player
@@ -113,16 +119,16 @@ class Rubygo
       def capture(cell)
         to_capture = []
         if cell.row > 0 && (@tokens[cell.row - 1][cell.column].player != cell.player)
-          to_capture.concat find_capture_group([@tokens[cell.row - 1][cell.column]])
+          to_capture.concat find_group([@tokens[cell.row - 1][cell.column]])
         end
         if (cell.column > 0) && (!to_capture.include? @tokens[cell.row][cell.column - 1]) && (@tokens[cell.row][cell.column - 1].player != cell.player)
-          to_capture.concat find_capture_group([@tokens[cell.row][cell.column - 1]])
+          to_capture.concat find_group([@tokens[cell.row][cell.column - 1]])
         end
-        if (cell.row < @height) && (!to_capture.include? @tokens[cell.row + 1][cell.column]) && (@tokens[cell.row + 1][cell.column].player != cell.player)
-          to_capture.concat find_capture_group([@tokens[cell.row + 1][cell.column]])
+        if (cell.row < (@height - 1)) && (!to_capture.include? @tokens[cell.row + 1][cell.column]) && (@tokens[cell.row + 1][cell.column].player != cell.player)
+          to_capture.concat find_group([@tokens[cell.row + 1][cell.column]])
         end
-        if (cell.column < @width) && (!to_capture.include? @tokens[cell.row][cell.column + 1]) && (@tokens[cell.row][cell.column + 1].player != cell.player)
-          to_capture.concat find_capture_group([@tokens[cell.row][cell.column + 1]])
+        if (cell.column < (@width - 1)) && (!to_capture.include? @tokens[cell.row][cell.column + 1]) && (@tokens[cell.row][cell.column + 1].player != cell.player)
+          to_capture.concat find_group([@tokens[cell.row][cell.column + 1]])
         end
         to_capture.each {|cell| cell.player = 0}
       end
@@ -146,28 +152,37 @@ class Rubygo
               game.width.times.map do |column|
                 half = game.scale / 2
                 area {
-                  square(0, 0, game.scale) {
-                    fill r: 240, g: 215, b: 141, a: 1.0
-                    on_mouse_up do |clicked_event|
-                      game.play(row, column)
+                  on_mouse_up { game.play(row, column) }
+                  content(game.tokens[row][column], :player) {
+                    token = game.tokens[row][column]
+                    square(0, 0, game.scale) {
+                      fill r: 240, g: 215, b: 141, a: 1.0
+                      
+                    }
+                    if (row % 3 == 0) && (column % 3 == 0) && (row % 2 != 0) && (column % 2 != 0) 
+                      circle(half, half, 4) { fill :black }
                     end
-                  }
-                  if (row % 3 == 0) && (column % 3 == 0) && (row % 2 != 0) && (column % 2 != 0) 
-                    circle(half, half, 4) { fill :black }
-                  end
-                  line(half,row == 0 ? half : 0, half, row == (game.height - 1)? half : game.scale) {
-                    stroke 0x000000
-                  } 
-                  line(column == 0 ? half : 0, half, column == (game.width - 1) ? half : game.scale, half){
-                    stroke 0x000000
-                  } 
-                  circle(half, half, half - 8) {
-                    fill <= [game.tokens[row][column], :player, on_read: -> (player) { 
-                      return if player == 0
-                      return :white if player == 1
-                      :black 
-                    } ]
-                    
+                    line(half,row == 0 ? half : 0, half, row == (game.height - 1)? half : game.scale) {
+                      stroke 0x000000
+                    } 
+                    line(column == 0 ? half : 0, half, column == (game.width - 1) ? half : game.scale, half){
+                      stroke 0x000000
+                    } 
+                    if token.player == 1 
+                      circle(half, half, half - 8) {
+                        fill :white
+                      }
+                    elsif token.player == -1
+                      circle(half, half, half - 8) {
+                        fill :black
+                      }
+                    end
+                    line(0, 0, game.scale, game.scale) {
+                      stroke <= [game.tokens[row][column], :dead, on_read: ->  (dead) { dead ? :red : nil }]
+                    }
+                    line(0, game.scale, game.scale, 0) {
+                      stroke <= [game.tokens[row][column], :dead, on_read: -> (dead) { dead ? :red : nil }] 
+                    }
                   }
                 }
               end
@@ -240,7 +255,7 @@ class Rubygo
           title "Game Over"
           margined true
           vertical_box {
-            label("Game Over")
+            label("Game Over. Mark dead stones")
             button("New Game") {
               on_clicked do
                 restart.call()

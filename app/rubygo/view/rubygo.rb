@@ -75,8 +75,7 @@ class Rubygo
           @tokens[row][column][:player] = 0
           return
         end
-        @cur_player = -@cur_player
-        self.cur_player = @cur_player
+        self.cur_player = -@cur_player
       end
     end
   end

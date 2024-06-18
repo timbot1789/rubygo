@@ -77,7 +77,7 @@ class Rubygo
         history = @history[@history.size - 2]
         @tokens.each do |col|
           col.each do |cell|
-            return false if cell[:player] != history[cell[:row]][cell[:column]][:player]
+            return false if cell.player != history[cell.row][cell.column].player
           end
         end
         true 
@@ -95,22 +95,22 @@ class Rubygo
         end
         @tokens.each do |col|
           col.each do |cell|
-            cell[:player] = history[cell[:row]][cell[:column]][:player]
+            cell.player = history[cell.row][cell.column].player
           end
         end
       end
 
       def play(row, column)
-        if self.game_over && self.tokens[row][column].player != 0
-          return self.tokens[row][column].dead = !self.tokens[row][column].dead
+        token = tokens[row][column]
+        if self.game_over && token.player != 0
+          return token.dead = !token.dead
         end
-        return unless self.tokens[row][column][:player] == 0
-        @history.push @tokens.map { |arr| arr.map {|cell| cell.clone }}
-        self.tokens[row][column][:player] = self.cur_player
-        cell = self.tokens[row][column]
-        self.capture(cell)
+        return unless token.player == 0
+        @history.push tokens.map { |arr| arr.map {|cell| cell.clone }}
+        token.player = cur_player
+        self.capture(token)
 
-        return revert_history if is_suicide?(cell)
+        return revert_history if is_suicide?(token)
 
         return revert_history if is_ko?
         self.cur_player = -self.cur_player

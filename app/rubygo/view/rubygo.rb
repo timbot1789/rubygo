@@ -4,12 +4,15 @@ class Rubygo
   module Model
     class Game 
       
-      attr_accessor :height, :width, :scale, :name, :tokens, :cur_player, :white_score, :black_score
+      attr_reader :white_score, :black_score
+      attr_accessor :height, :width, :scale, :name, :tokens, :cur_player
       
-      def initialize(height = 19, width = 19, scale = 90, name = "Go Game")
+      def initialize(height = 19, width = 19, scale = 80, name = "Go Game", white_score = 0, black_score = 0)
         @height = height
         @width = width
         @scale = scale - width - height
+        @white_score = white_score
+        @black_score = black_score 
         @tokens = @height.times.map do |row|
           @width.times.map do |column|
             Cell.new(0, row, column) 
@@ -73,6 +76,7 @@ class Rubygo
           return
         end
         @cur_player = -@cur_player
+        self.cur_player = @cur_player
       end
     end
   end
@@ -217,20 +221,23 @@ class Rubygo
 
       body {
         window {
-          # Replace example content below with your own custom window content
           width <= [@game, :width, on_read: -> (width) {width * @game.scale}] 
           height <= [@game, :height, on_read: -> (height) {height * @game.scale}]
           title 'Ruby Go'
           resizable false
 
           margined true
-
-          label {
-            text <= [@game, :name]
-          }
           vertical_box {
-            content(@game, :tokens) {
-              game_board(game: @game)
+            horizontal_box {
+              stretchy false
+              label {
+                text <= [@game, :cur_player, on_read: -> (player) {"Current Player: #{player == 1 ? "White" : "Black"}"}]
+              } 
+            }
+            vertical_box {
+              content(@game, :tokens) {
+                game_board(game: @game)
+              }
             }
           }
         }
@@ -239,9 +246,6 @@ class Rubygo
       def display_about_dialog
         message = "Rubygo #{VERSION}\n\n#{LICENSE}"
         msg_box('About', message)
-      end
-
-      def display_new_game_dialog
       end
     end
   end

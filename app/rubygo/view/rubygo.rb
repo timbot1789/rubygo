@@ -15,12 +15,13 @@ class Rubygo
         @white_score = white_score
         @has_passed = false
         @black_score = black_score
+        @history = []
         @tokens = @height.times.map do |row|
           @width.times.map do |column|
             Cell.new(0, row, column) 
           end
         end
-        @cur_player = 1
+        @cur_player = -1
       end
 
       def pass
@@ -37,7 +38,8 @@ class Rubygo
       def reset
         self.game_over = false
         @has_passed = false
-        self.cur_player = 1
+        self.cur_player = -1
+        @history = []
         tokens.each do |col|
           col.each { |cell| cell[:player] = 0 }
         end
@@ -69,15 +71,40 @@ class Rubygo
         group
       end
 
+      def history_compare
+        history = @history[@history.size - 2]
+        @tokens.each do |col|
+          col.each do |cell|
+            return false if cell[:player] != history[cell[:row]][cell[:column]][:player]
+          end
+        end
+        true 
+      end 
+
+      def revert_history(history)
+        @tokens.each do |col|
+          col.each do |cell|
+            cell[:player] = history[cell[:row]][cell[:column]][:player]
+          end
+        end
+      end
+
       def play(row, column)
         return if self.game_over
         return unless self.tokens[row][column][:player] == 0
+        @history.push @tokens.map { |arr| arr.map {|cell| cell.clone }}
         self.tokens[row][column][:player] = self.cur_player
         cell = self.tokens[row][column]
         self.capture(cell)
         capture_group = self.find_capture_group([cell])
         unless capture_group.empty?
-          self.tokens[row][column][:player] = 0
+-         self.tokens[row][column][:player] = 0
+          @history.pop
+          return
+        end
+        if (@history.size > 2) && history_compare 
+          history = @history.pop
+          revert_history history
           return
         end
         self.cur_player = -self.cur_player

@@ -71,7 +71,9 @@ class Rubygo
         group
       end
 
-      def history_compare
+      def is_ko? 
+        return false if @history.size < 2
+
         history = @history[@history.size - 2]
         @tokens.each do |col|
           col.each do |cell|
@@ -81,7 +83,16 @@ class Rubygo
         true 
       end 
 
-      def revert_history(history)
+      def is_suicide?(cell)
+        capture_group = self.find_capture_group([cell])
+        return !capture_group.empty?
+      end
+
+      def revert_history(turns = 1)
+        history = []
+        turns.times.each do
+          history = @history.pop
+        end
         @tokens.each do |col|
           col.each do |cell|
             cell[:player] = history[cell[:row]][cell[:column]][:player]
@@ -96,17 +107,10 @@ class Rubygo
         self.tokens[row][column][:player] = self.cur_player
         cell = self.tokens[row][column]
         self.capture(cell)
-        capture_group = self.find_capture_group([cell])
-        unless capture_group.empty?
--         self.tokens[row][column][:player] = 0
-          @history.pop
-          return
-        end
-        if (@history.size > 2) && history_compare 
-          history = @history.pop
-          revert_history history
-          return
-        end
+
+        return revert_history if is_suicide?(cell)
+
+        return revert_history if is_ko?
         self.cur_player = -self.cur_player
       end
 

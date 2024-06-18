@@ -141,7 +141,6 @@ class Rubygo
       include Glimmer::LibUI::CustomControl
       option :game
 
-
       body{
         vertical_box {
           padded false
@@ -171,6 +170,9 @@ class Rubygo
                     } ]
                     
                   }
+                  if (row % 3 == 0) && (column % 3 == 0) && (row % 2 != 0) && (column % 2 != 0) 
+                    circle(half, half, 4) { fill :black }
+                  end
                 }
               end
             }

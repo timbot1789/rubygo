@@ -61,7 +61,7 @@ class Rubygo
   module View
     class NewGameWindow
       include Glimmer::LibUI::CustomWindow
-      option :on_create, default: lambda {|game|}
+      option :on_create, default: lambda { |game| }
       option :height, default: 12
       option :width, default: 12
 
@@ -161,18 +161,21 @@ class Rubygo
   module View
     class Rubygo
       include Glimmer::LibUI::Application
+      option :game
 
       before_body do
-        @game = Model::Game.new
+        self.game = Model::Game.new
         @scale = 50
+        @min_width = 400
+        @min_height = 400
 
         menu('Game') {
           menu_item('New Game') {
             on_clicked do
               on_create = lambda { |height, width|
-                @game.reset(height, width)
+                self.game = Model::Game.new(height, width)
               }
-              new_game_window(on_create: on_create, height: @game.height, width: @game.width).show
+              new_game_window(on_create: on_create, height: game.height, width: game.width).show
             end
           }
 
@@ -194,12 +197,12 @@ class Rubygo
             end
           }
         }
-        observe(@game, :game_over) do |game_over|
+        observe(game, :game_over) do |game_over|
           score = lambda {
-            @game.calc_score
+            game.calc_score
           }
           resume = lambda {
-            @game.resume
+            game.resume
           }
           game_over_window(get_score: score, resume: resume).show if game_over
         end
@@ -207,8 +210,8 @@ class Rubygo
 
       body {
         window {
-          width <= [@game, :width, on_read: ->(width) { width * @scale }]
-          height <= [@game, :height, on_read: ->(height) { height * @scale }]
+          width <= [self, :game, on_read: ->(game_w) { (game_w.width * @scale) > @min_width ? (game_w.width * @scale) : @min_width }]
+          height <= [self, :game, on_read: ->(game_h) { (game_h.height * @scale) > @min_height ?  (game_h.height * @scale) : @min_height}]
           title 'Ruby Go'
           resizable false
 
@@ -219,21 +222,21 @@ class Rubygo
               vertical_box {
                 stretchy false
                 label {
-                  text <= [@game, :black_score, on_read: -> (val) { "Black Score: #{val}" }]
+                  text <= [game, :black_score, on_read: -> (val) { "Black Score: #{val}" }]
                 }
                 label{
-                  text <= [@game, :white_score, on_read: -> (val) { "White Score: #{val}" }]
+                  text <= [game, :white_score, on_read: -> (val) { "White Score: #{val}" }]
                 }
               }
               label {}
               vertical_box{
                 stretchy false
                 label {
-                  text <= [@game, :cur_player, on_read: -> (player) { "Current Player: #{player == 1 ? "White" : "Black"}" }]
+                  text <= [game, :cur_player, on_read: -> (player) { "Current Player: #{player == 1 ? "White" : "Black"}" }]
                 }
                 button('Pass Turn') {
                   on_clicked do
-                    @game.pass
+                    game.pass
                   end
                 }
               }
@@ -242,7 +245,7 @@ class Rubygo
                 stretchy false
                 button('Undo turn') {
                   on_clicked do
-                    @game.revert_history
+                    game.revert_history
                   end
                 }
                 button('Resign') {
@@ -250,8 +253,8 @@ class Rubygo
               }
             }
             vertical_box {
-              content(@game, :tokens) {
-                game_board(game: @game, scale: @scale)
+              content(self, :game) { 
+                game_board(game: game, scale: @scale)
               }
             }
           }

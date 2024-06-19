@@ -42,7 +42,7 @@ class Rubygo
         self.white_score = 0
         self.black_score = 0
         @history = []
-        self.tokens = @height.times.map do |row|
+        @tokens = @height.times.map do |row|
           @width.times.map do |column|
             Cell.new(0, row, column)
           end

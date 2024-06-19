@@ -14,7 +14,7 @@ class Rubygo
             horizontal_box {
               padded false
               game.width.times.map do |column|
-                half = scale / 2
+                third = scale / 3
                 area {
                   on_mouse_up { game.play(row, column) }
                   content(game.tokens[row][column], :player) {
@@ -23,20 +23,20 @@ class Rubygo
                       fill r: 240, g: 215, b: 141, a: 1.0
                     }
                     if (row % 3).zero? && (column % 3).zero? && row.odd? && column.odd?
-                      circle(half, half, 4) { fill :black }
+                      circle(third, third, 4) { fill :black }
                     end
-                    line(half, row.zero? ? half : 0, half, row == (game.height - 1) ? half : scale) {
+                    line(third, row.zero? ? third : 0, third, row == (game.height - 1) ? third : scale) {
                       stroke 0x000000
                     }
-                    line(column.zero? ? half : 0, half, column == (game.width - 1) ? half : scale, half) {
+                    line(column.zero? ? third : 0, third, column == (game.width - 1) ? third : scale, third) {
                       stroke 0x000000
                     }
                     if token.player == 1
-                      circle(half, half, half - 7) {
+                      circle(third, third, third) {
                         fill :white
                       }
                     elsif token.player == -1
-                      circle(half, half, half - 7) {
+                      circle(third, third, third) {
                         fill :black
                       }
                     end
@@ -166,8 +166,8 @@ class Rubygo
       before_body do
         self.game = Model::Game.new
         @scale = 50
-        @min_width = 400
-        @min_height = 400
+        @min_width = 450
+        @min_height = 450
 
         menu('Game') {
           menu_item('New Game') {
@@ -197,15 +197,6 @@ class Rubygo
             end
           }
         }
-        observe(game, :game_over) do |game_over|
-          score = lambda {
-            game.calc_score
-          }
-          resume = lambda {
-            game.resume
-          }
-          game_over_window(get_score: score, resume: resume).show if game_over
-        end
       end
 
       body {
@@ -217,44 +208,53 @@ class Rubygo
 
           margined true
           vertical_box {
-            horizontal_box {
-              stretchy false
+            content(self, :game) {
+              observe(game, :game_over) do |game_over|
+                score = lambda {
+                  game.calc_score
+                }
+                resume = lambda {
+                  game.resume
+                }
+                game_over_window(get_score: score, resume: resume).show if game_over
+              end
+              horizontal_box {
+                stretchy false
+                vertical_box {
+                  stretchy false
+                  label {
+                    text <= [game, :black_score, on_read: -> (val) { "Black Score: #{val}" }]
+                  }
+                  label{
+                    text <= [game, :white_score, on_read: -> (val) { "White Score: #{val}" }]
+                  }
+                }
+                label {}
+                vertical_box{
+                  stretchy false
+                  label {
+                    text <= [game, :cur_player, on_read: -> (player) { "Current Player: #{player == 1 ? "White" : "Black"}" }]
+                  }
+                  button('Pass Turn') {
+                    on_clicked do
+                      game.pass
+                    end
+                  }
+                }
+                label {}
+                vertical_box {
+                  stretchy false
+                  button('Undo turn') {
+                    on_clicked do
+                      game.revert_history
+                    end
+                  }
+                  button('Resign') {
+                  }
+                }
+              }
               vertical_box {
-                stretchy false
-                label {
-                  text <= [game, :black_score, on_read: -> (val) { "Black Score: #{val}" }]
-                }
-                label{
-                  text <= [game, :white_score, on_read: -> (val) { "White Score: #{val}" }]
-                }
-              }
-              label {}
-              vertical_box{
-                stretchy false
-                label {
-                  text <= [game, :cur_player, on_read: -> (player) { "Current Player: #{player == 1 ? "White" : "Black"}" }]
-                }
-                button('Pass Turn') {
-                  on_clicked do
-                    game.pass
-                  end
-                }
-              }
-              label {}
-              vertical_box {
-                stretchy false
-                button('Undo turn') {
-                  on_clicked do
-                    game.revert_history
-                  end
-                }
-                button('Resign') {
-                }
-              }
-            }
-            vertical_box {
-              content(self, :game) { 
-                game_board(game: game, scale: @scale)
+                game_board(game: game, scale: (game.height * @scale > @min_height ? @scale : (@min_height / game.height)))
               }
             }
           }

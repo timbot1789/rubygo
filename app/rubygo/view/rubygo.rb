@@ -23,10 +23,10 @@ class Rubygo
       end
 
       def pass
-        has_passed = (history.last[:move] == :pass)
+        has_passed = ((@history.count > 0) && (@history.last[:action] == :pass))
         turn = {
           player: cur_player,
-          move: :pass 
+          action: :pass 
         }
         @history.push turn
         return self.game_over = true if has_passed
@@ -82,12 +82,11 @@ class Rubygo
       def is_ko? 
         return false if @history.count < 3
         now = @history.last
-        if @history[@history.count - 2][:action] == :play
-          last_real_turn = 2
-        elsif @history[@history.count - 3][:action] == :play
-          last_real_turn = 3
-        else
-          last_real_turn = 4
+        last_real_turn = 2
+
+        # Ignore history actions like :pass and :resign
+        while @history[@history.count - last_real_turn][:action] != :play
+          last_real_turn += 1
         end
         last = @history[@history.count - last_real_turn] 
         if (last[:captures].count == 1) && (last[:captures].first.row == now[:play].first) && (last[:captures].first.column == now[:play].last)
@@ -373,11 +372,6 @@ class Rubygo
           vertical_box {
             horizontal_box {
               stretchy false
-              vertical_box{
-                label {
-                  text <= [@game, :cur_player, on_read: -> (player) {"Current Player: #{player == 1 ? "White" : "Black"}"}]
-                }
-              }
               vertical_box {
                 stretchy false
                 label {
@@ -387,6 +381,19 @@ class Rubygo
                   text <= [@game, :white_captures, on_read: -> (val) {"White Captures: #{val}"}]
                 }
               }
+              label {}
+              vertical_box{
+                stretchy false
+                label {
+                  text <= [@game, :cur_player, on_read: -> (player) {"Current Player: #{player == 1 ? "White" : "Black"}"}]
+                }
+                button('Pass Turn') {
+                  on_clicked do
+                    @game.pass
+                  end
+                }
+              }
+              label {}
               vertical_box {
                 stretchy false
                 button('Undo turn') {
@@ -394,11 +401,8 @@ class Rubygo
                     @game.revert_history
                   end
                 } 
-                button('Pass Turn') {
-                  on_clicked do
-                    @game.pass
-                  end
-                }
+                button('Resign') {
+                } 
               }
             }
             vertical_box {

@@ -4,17 +4,15 @@ class Rubygo
   module Model
     class Game 
       
-      attr_reader :white_score, :black_score
-      attr_accessor :height, :width, :scale, :name, :tokens, :cur_player, :game_over
+      attr_accessor :height, :width, :scale, :name, :tokens, :cur_player, :game_over, :komi, :white_captures, :black_captures
       
       def initialize(height = 19, width = 19, scale = 85, name = "Go Game", white_score = 0, black_score = 0)
         @height = height
         @width = width
         @game_over = false
         @scale = scale - width - height
-        @white_score = white_score
-        @has_passed = false
-        @black_score = black_score
+        @white_captures = white_score
+        @black_captures = black_score
         @history = []
         @tokens = @height.times.map do |row|
           @width.times.map do |column|
@@ -25,15 +23,19 @@ class Rubygo
       end
 
       def pass
-        return self.game_over = true if @has_passed
+        has_passed = (history.last[:move] == :pass)
+        turn = {
+          player: cur_player,
+          move: :pass 
+        }
+        @history.push turn
+        return self.game_over = true if has_passed
 
         self.cur_player = -self.cur_player
-        @has_passed = true
       end
       
       def reset
         self.game_over = false
-        @has_passed = false
         self.cur_player = -1
         @history = []
         tokens.each do |col|
@@ -42,7 +44,6 @@ class Rubygo
       end
 
       def resume
-        @has_passed = false
         game_over = false
         @tokens.each do |col|
           col.each do |cell|
@@ -79,15 +80,15 @@ class Rubygo
       end
 
       def is_ko? 
-        return false if @history.size < 2
-
-        history = @history[@history.size - 2]
-        @tokens.each do |col|
-          col.each do |cell|
-            return false if cell.player != history[cell.row][cell.column].player
-          end
+        return false if @history.size < 3
+        now = @history.last
+        last = @history[@history.size - 3]
+        last = @history[@history.size - 4] if last[:action] != :play
+        last = @history[@history.size - 5] if last[:action] != :play
+        if (now[:play] == last[:play]) && (now[:captures] == last[:captures])
+          return true
         end
-        true 
+        false
       end 
 
       def is_suicide?(cell)
@@ -96,14 +97,22 @@ class Rubygo
       end
 
       def revert_history(turns = 1)
-        history = []
         turns.times.each do
-          self.cur_player = -self.cur_player
           history = @history.pop
-        end
-        @tokens.each do |col|
-          col.each do |cell|
-            cell.player = history[cell.row][cell.column].player
+          return unless history 
+          player = history[:player]
+          self.cur_player = player
+          if history[:action] == :play 
+            row, column = history[:play]
+            tokens[row][column].player = 0
+            history[:captures].each do |capture|
+              tokens[capture.row][capture.column].player = -player
+            end
+            if player == 1
+              self.white_captures -= history[:captures].count
+            elsif player == -1
+              self.black_captures -= history[:captures].count
+            end
           end
         end
       end
@@ -115,31 +124,44 @@ class Rubygo
           return token.dead = !token.dead
         end
         return unless token.player == 0
-        @history.push tokens.map { |arr| arr.map {|cell| cell.clone }}
         token.player = cur_player
-        self.capture(token)
+        captured = self.capture(token)
+        turn = {
+          player: cur_player,
+          action: :play, 
+          play: [row, column],
+          captures: captured.map{ |capture| capture.clone }
+        }
+        @history.push turn 
+        if cur_player == 1
+          self.white_captures += captured.count
+        elsif cur_player == -1
+          self.black_captures += captured.count
+        end
 
         return revert_history if is_suicide?(token)
 
         return revert_history if is_ko?
+
         self.cur_player = -self.cur_player
       end
 
       def capture(cell)
         to_capture = []
-        if cell.row > 0 && (@tokens[cell.row - 1][cell.column].player != cell.player)
+        if cell.row > 0 && (@tokens[cell.row - 1][cell.column].player == -cell.player)
           to_capture.concat find_group([@tokens[cell.row - 1][cell.column]])
         end
-        if (cell.column > 0) && (!to_capture.include? @tokens[cell.row][cell.column - 1]) && (@tokens[cell.row][cell.column - 1].player != cell.player)
+        if (cell.column > 0) && (!to_capture.include? @tokens[cell.row][cell.column - 1]) && (@tokens[cell.row][cell.column - 1].player == -cell.player)
           to_capture.concat find_group([@tokens[cell.row][cell.column - 1]])
         end
-        if (cell.row < (@height - 1)) && (!to_capture.include? @tokens[cell.row + 1][cell.column]) && (@tokens[cell.row + 1][cell.column].player != cell.player)
+        if (cell.row < (@height - 1)) && (!to_capture.include? @tokens[cell.row + 1][cell.column]) && (@tokens[cell.row + 1][cell.column].player == -cell.player)
           to_capture.concat find_group([@tokens[cell.row + 1][cell.column]])
         end
-        if (cell.column < (@width - 1)) && (!to_capture.include? @tokens[cell.row][cell.column + 1]) && (@tokens[cell.row][cell.column + 1].player != cell.player)
+        if (cell.column < (@width - 1)) && (!to_capture.include? @tokens[cell.row][cell.column + 1]) && (@tokens[cell.row][cell.column + 1].player == -cell.player)
           to_capture.concat find_group([@tokens[cell.row][cell.column + 1]])
         end
         to_capture.each {|cell| cell.player = 0}
+        to_capture
       end
 
     end
@@ -346,8 +368,19 @@ class Rubygo
           vertical_box {
             horizontal_box {
               stretchy false
-              label {
-                text <= [@game, :cur_player, on_read: -> (player) {"Current Player: #{player == 1 ? "White" : "Black"}"}]
+              vertical_box{
+                label {
+                  text <= [@game, :cur_player, on_read: -> (player) {"Current Player: #{player == 1 ? "White" : "Black"}"}]
+                }
+              }
+              vertical_box {
+                stretchy false
+                label {
+                  text <= [@game, :black_captures, on_read: -> (val) {"Black Captures: #{val}"}]
+                }
+                label{
+                  text <= [@game, :white_captures, on_read: -> (val) {"White Captures: #{val}"}]
+                }
               }
               vertical_box {
                 stretchy false

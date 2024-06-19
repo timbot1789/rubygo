@@ -192,7 +192,6 @@ class Rubygo
                     token = game.tokens[row][column]
                     square(0, 0, game.scale) {
                       fill r: 240, g: 215, b: 141, a: 1.0
-                      
                     }
                     if (row % 3 == 0) && (column % 3 == 0) && (row % 2 != 0) && (column % 2 != 0) 
                       circle(half, half, 4) { fill :black }
@@ -244,18 +243,18 @@ class Rubygo
           vertical_box {
             group("Game Size") {
               vertical_box {
-                  horizontal_box {
-                    label('Board Width')
-                    spinbox(1, 20) {
-                      value <=> [self, :width]
-                    }
+                horizontal_box {
+                  label('Board Width')
+                  spinbox(1, 20) {
+                    value <=> [self, :width]
                   }
-                  horizontal_box {
-                    label('Board Height')
-                    spinbox(1, 20) {
-                      value <=> [self, :height]
-                    }
+                }
+                horizontal_box {
+                  label('Board Height')
+                  spinbox(1, 20) {
+                    value <=> [self, :height]
                   }
+                }
               }
             }
             horizontal_box {

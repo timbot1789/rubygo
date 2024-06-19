@@ -80,12 +80,17 @@ class Rubygo
       end
 
       def is_ko? 
-        return false if @history.size < 3
+        return false if @history.count < 3
         now = @history.last
-        last = @history[@history.size - 3]
-        last = @history[@history.size - 4] if last[:action] != :play
-        last = @history[@history.size - 5] if last[:action] != :play
-        if (now[:play] == last[:play]) && (now[:captures] == last[:captures])
+        if @history[@history.count - 2][:action] == :play
+          last_real_turn = 2
+        elsif @history[@history.count - 3][:action] == :play
+          last_real_turn = 3
+        else
+          last_real_turn = 4
+        end
+        last = @history[@history.count - last_real_turn] 
+        if (last[:captures].count == 1) && (last[:captures].first.row == now[:play].first) && (last[:captures].first.column == now[:play].last)
           return true
         end
         false

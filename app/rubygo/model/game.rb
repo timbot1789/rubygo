@@ -1,17 +1,19 @@
-Cell = Struct.new(:player, :row, :column, :dead)
+Cell = Struct.new(:player, :row, :column, :dead, :border)
+Score = Struct.new(:black, :white, :dame, :komi)
 
 class Rubygo
   module Model
     class Game
-      attr_accessor :height, :width, :scale, :tokens, :cur_player, :game_over, :komi, :white_captures, :black_captures
+      attr_accessor :height, :width, :scale, :tokens, :cur_player, :game_over, :komi, :white_score, :black_score
 
-      def initialize(height = 19, width = 19, scale = 85, white_score = 0, black_score = 0)
+      def initialize(height = 19, width = 19, scale = 90, white_score = 0, black_score = 0, komi = 0)
         @height = height
         @width = width
+        @komi = komi
         @game_over = false
         @scale = scale - width - height
-        @white_captures = white_score
-        @black_captures = black_score
+        @white_score = white_score
+        @black_score = black_score
         @history = []
         @tokens = @height.times.map do |row|
           @width.times.map do |column|
@@ -33,12 +35,18 @@ class Rubygo
         self.cur_player = -cur_player
       end
 
-      def reset
+      def reset(new_height = 0, new_width = 0)
+        self.height = new_height.positive? ? new_height : @height
+        self.width = new_width.positive? ? new_width : @width
         self.game_over = false
         self.cur_player = -1
+        self.white_score = 0
+        self.black_score = 0
         @history = []
-        tokens.each do |col|
-          col.each { |cell| cell[:player] = 0 }
+        self.tokens = @height.times.map do |row|
+          @width.times.map do |column|
+            Cell.new(0, row, column)
+          end
         end
       end
 
@@ -46,9 +54,82 @@ class Rubygo
         self.game_over = false
         @tokens.each do |col|
           col.each do |cell|
+            if cell.dead
+              self.white_score += 1 if cell.player == 1
+              self.black_score += 1 if cell.player == -1
+            end
             cell.dead = false
+
           end
         end
+      end
+
+      def find_score_group(group)
+        cell = group.last
+        player = cell.player
+        row = cell.row
+        col = cell.column
+        borders = []
+
+        # Check own borders
+        borders.push @tokens[row - 1][col].player if row.positive? && !@tokens[row - 1][col].player.zero? && !@tokens[row - 1][col].dead
+        borders.push @tokens[row][col - 1].player if col.positive? && !@tokens[row][col - 1].player.zero? && !@tokens[row][col - 1].dead
+        borders.push @tokens[row + 1][col].player if row < (@height - 1) && !@tokens[row + 1][col].player.zero? && !@tokens[row + 1][col].dead
+        borders.push @tokens[row][col + 1].player if col < (@width - 1) && !@tokens[row][col + 1].player.zero? && !@tokens[row][col + 1].dead
+        cell.border = borders.reduce(0) do |left, right|
+          if (left == right) || left.zero?
+            right
+          elsif right.zero?
+            left
+          else
+            2 # dame
+          end
+        end
+
+        # Check group borders
+        if row.positive? && ((@tokens[row - 1][col].player == player) || @tokens[row - 1][col].dead) && (!group.include? @tokens[row - 1][col])
+          find_score_group(group.push(@tokens[row - 1][col]))
+        end
+        if col.positive? && ((@tokens[row][col - 1].player == player) || @tokens[row][col - 1].dead) && (!group.include? @tokens[row][col - 1])
+          find_score_group(group.push(@tokens[row][col - 1]))
+        end
+        if (row < (@height - 1)) && ((@tokens[row + 1][col].player == player) || @tokens[row + 1][col].dead) && (!group.include? @tokens[row + 1][col])
+          find_score_group(group.push(@tokens[row + 1][col]))
+        end
+        if (col < (@width - 1)) && ((@tokens[row][col + 1].player == player) || @tokens[row][col + 1].dead) && (!group.include? @tokens[row][col + 1])
+          find_score_group(group.push(@tokens[row][col + 1]))
+        end
+
+        group
+      end
+
+      def calc_score
+        puts "calculating score"
+        seen = []
+        black_points = @black_score
+        white_points = @white_score
+        dame_points = 0
+        @tokens.each do |row|
+          row.each do |cell|
+            next if (cell.player != 0) || seen.include?(cell)
+
+            score_group = find_score_group([cell])
+            seen.concat score_group
+            owner = score_group.reduce(0) do |left, right|
+              if (left == right.border) || left.zero?
+                right.border
+              elsif right.border.zero?
+                left
+              else
+                2 # dame
+              end
+            end
+            black_points += score_group.count if owner == -1
+            white_points += score_group.count if owner == 1
+            dame_points += score_group.count if owner == 2
+          end
+        end
+        puts Score.new(black_points, white_points, dame_points, @komi)
       end
 
       def find_liberty(group)
@@ -101,8 +182,7 @@ class Rubygo
       end
 
       def suicide?(cell)
-        capture_group = find_liberty([cell])
-        !capture_group.empty?
+        !find_liberty([cell]).empty?
       end
 
       def revert_history(turns = 1)
@@ -120,9 +200,11 @@ class Rubygo
             tokens[capture.row][capture.column].player = -player
           end
           if player == 1
-            self.white_captures -= history[:captures].count
+            self.black_score += history[:captures].count
+            self.white_score -= 1
           elsif player == -1
-            self.black_captures -= history[:captures].count
+            self.white_score += history[:captures].count
+            self.black_score -= 1
           end
         end
       end
@@ -130,7 +212,11 @@ class Rubygo
       def play(row, column)
         @has_passed = false
         token = tokens[row][column]
-        return token.dead = !token.dead if game_over && token.player != 0
+        if game_over && token.player != 0
+          self.white_score -= 1 if token.player == 1
+          self.black_score -= 1 if token.player == -1
+          return token.dead = !token.dead
+        end
         return unless token.player.zero?
 
         token.player = cur_player
@@ -143,9 +229,11 @@ class Rubygo
         }
         @history.push turn
         if cur_player == 1
-          self.white_captures += captured.count
+          self.black_score -= captured.count
+          self.white_score += 1
         elsif cur_player == -1
-          self.black_captures += captured.count
+          self.white_score -= captured.count
+          self.black_score += 1
         end
 
         return revert_history if suicide?(token) || ko?

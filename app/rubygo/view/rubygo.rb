@@ -41,6 +41,17 @@ class Rubygo
         end
       end
 
+      def resume
+        @has_passed = false
+        game_over = false
+        @tokens.each do |col|
+          col.each do |cell|
+            cell.dead = false
+          end
+        end
+
+      end
+
       def find_group(group)
         cell = group.last
         return [] if cell.row > 0 && @tokens[cell.row - 1][cell.column].player == 0 
@@ -65,10 +76,6 @@ class Rubygo
           return [] if right.empty?
         end
         group
-      end
-
-      def num_eyes(cell)
-
       end
 
       def is_ko? 
@@ -101,6 +108,7 @@ class Rubygo
       end
 
       def play(row, column)
+        @has_passed = false
         token = tokens[row][column]
         if self.game_over && token.player != 0
           return token.dead = !token.dead
@@ -249,6 +257,7 @@ class Rubygo
     class GameOverWindow
       include Glimmer::LibUI::CustomWindow
       option :restart, default: lambda {}
+      option :resume, default: lambda {}
       
       body {
         window { |game_over_window|
@@ -256,9 +265,15 @@ class Rubygo
           margined true
           vertical_box {
             label("Game Over. Mark dead stones")
-            button("New Game") {
+            button("Score Game") {
               on_clicked do
                 restart.call()
+                game_over_window.destroy
+              end
+            }
+            button("Resume Game") {
+              on_clicked do
+                resume.call()
                 game_over_window.destroy
               end
             }
@@ -284,7 +299,7 @@ class Rubygo
                 @game.height = game.height
                 @game.width = game.width
                 @game.tokens = game.tokens
-                @game.cur_player = 1
+                @game.cur_player = -1
               }
               new_game_window(on_create: on_create, height: @game.height, width: @game.width).show
             end
@@ -313,7 +328,10 @@ class Rubygo
           restart = lambda {
             @game.reset
           }
-          game_over_window(restart: restart).show if game_over
+          resume = lambda {
+            @game.resume
+          }
+          game_over_window(restart: restart, resume: resume).show if game_over
         end
       end
 
@@ -330,6 +348,12 @@ class Rubygo
               stretchy false
               label {
                 text <= [@game, :cur_player, on_read: -> (player) {"Current Player: #{player == 1 ? "White" : "Black"}"}]
+              }
+              button('Undo turn') {
+                on_clicked do
+                  @game.revert_history
+                  @game.cur_player = -@game.cur_player
+                end
               } 
               button('Pass Turn') {
                 on_clicked do
@@ -345,7 +369,6 @@ class Rubygo
           }
         }
       }
-
 
       def display_about_dialog
         message = "Rubygo #{VERSION}\n\n#{LICENSE}"

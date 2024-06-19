@@ -152,22 +152,24 @@ class Rubygo
 
       def capture(cell)
         to_capture = []
-        if cell.row > 0 && (@tokens[cell.row - 1][cell.column].player == -cell.player)
-          to_capture.concat find_group([@tokens[cell.row - 1][cell.column]])
+        row = cell.row
+        col = cell.column
+        player = cell.player
+        if row > 0 && (@tokens[row - 1][col].player == -player)
+          to_capture.concat find_group([@tokens[row - 1][col]])
         end
-        if (cell.column > 0) && (!to_capture.include? @tokens[cell.row][cell.column - 1]) && (@tokens[cell.row][cell.column - 1].player == -cell.player)
-          to_capture.concat find_group([@tokens[cell.row][cell.column - 1]])
+        if (col > 0) && (!to_capture.include? @tokens[row][col - 1]) && (@tokens[row][col - 1].player == -player)
+          to_capture.concat find_group([@tokens[row][col - 1]])
         end
-        if (cell.row < (@height - 1)) && (!to_capture.include? @tokens[cell.row + 1][cell.column]) && (@tokens[cell.row + 1][cell.column].player == -cell.player)
-          to_capture.concat find_group([@tokens[cell.row + 1][cell.column]])
+        if (row < (@height - 1)) && (!to_capture.include? @tokens[row + 1][col]) && (@tokens[row + 1][col].player == -player)
+          to_capture.concat find_group([@tokens[row + 1][col]])
         end
-        if (cell.column < (@width - 1)) && (!to_capture.include? @tokens[cell.row][cell.column + 1]) && (@tokens[cell.row][cell.column + 1].player == -cell.player)
-          to_capture.concat find_group([@tokens[cell.row][cell.column + 1]])
+        if (col < (@width - 1)) && (!to_capture.include? @tokens[row][col + 1]) && (@tokens[row][col + 1].player == -player)
+          to_capture.concat find_group([@tokens[row][col + 1]])
         end
         to_capture.each { |captured| captured.player = 0 }
         to_capture
       end
-
     end
   end
 end

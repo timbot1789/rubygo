@@ -21,16 +21,16 @@ class Rubygo
                     square(0, 0, game.scale) {
                       fill r: 240, g: 215, b: 141, a: 1.0
                     }
-                    if (row % 3 == 0) && (column % 3 == 0) && (row % 2 != 0) && (column % 2 != 0) 
+                    if (row % 3).zero? && (column % 3).zero? && row.odd? && column.odd?
                       circle(half, half, 4) { fill :black }
                     end
-                    line(half,row == 0 ? half : 0, half, row == (game.height - 1)? half : game.scale) {
+                    line(half,row == 0 ? half : 0, half, row == (game.height - 1) ? half : game.scale) {
                       stroke 0x000000
-                    } 
-                    line(column == 0 ? half : 0, half, column == (game.width - 1) ? half : game.scale, half){
+                    }
+                    line(column == 0 ? half : 0, half, column == (game.width - 1) ? half : game.scale, half) {
                       stroke 0x000000
-                    } 
-                    if token.player == 1 
+                    }
+                    if token.player == 1
                       circle(half, half, half - 8) {
                         fill :white
                       }
@@ -40,10 +40,10 @@ class Rubygo
                       }
                     end
                     line(0, 0, game.scale, game.scale) {
-                      stroke <= [game.tokens[row][column], :dead, on_read: ->  (dead) { dead ? :red : nil }]
+                      stroke <= [game.tokens[row][column], :dead, on_read: ->(dead) { dead ? :red : nil }]
                     }
                     line(0, game.scale, game.scale, 0) {
-                      stroke <= [game.tokens[row][column], :dead, on_read: -> (dead) { dead ? :red : nil }] 
+                      stroke <= [game.tokens[row][column], :dead, on_read: ->(dead) { dead ? :red : nil }]
                     }
                   }
                 }
@@ -60,13 +60,13 @@ class Rubygo
   module View
     class NewGameWindow
       include Glimmer::LibUI::CustomWindow
-      option :on_create, default: lambda { |user| }
+      option :on_create, default: lambda {}
       option :height, default: 12
       option :width, default: 12
 
       body {
         window { |new_game_window|
-          title "New Game"
+          title 'New Game'
           margined true
           vertical_box {
             group("Game Size") {
@@ -112,7 +112,7 @@ class Rubygo
       include Glimmer::LibUI::CustomWindow
       option :restart, default: lambda {}
       option :resume, default: lambda {}
-      
+
       body {
         window { |game_over_window|
           title "Game Over"
@@ -121,13 +121,13 @@ class Rubygo
             label("Game Over. Mark dead stones")
             button("Score Game") {
               on_clicked do
-                restart.call()
+                restart.call
                 game_over_window.destroy
               end
             }
             button("Resume Game") {
               on_clicked do
-                resume.call()
+                resume.call
                 game_over_window.destroy
               end
             }
@@ -149,13 +149,13 @@ class Rubygo
         menu('Game') {
           menu_item('New Game') {
             on_clicked do
-              on_create = lambda { |game| 
+              on_create = lambda { |game|
                 @game.height = game.height
                 @game.width = game.width
                 @game.tokens = game.tokens
                 @game.cur_player = -1
               }
-              new_game_window(on_create: on_create, height: @game.height, width: @game.width).show
+              new_game_window(on_create, height: @game.height, width: @game.width).show
             end
           }
 
@@ -184,14 +184,14 @@ class Rubygo
           resume = lambda {
             @game.resume
           }
-          game_over_window(restart: restart, resume: resume).show if game_over
+          game_over_window(restart, resume).show if game_over
         end
       end
 
       body {
-        window { 
-          width <= [@game, :width, on_read: -> (width) {width * @game.scale}] 
-          height <= [@game, :height, on_read: -> (height) {height * @game.scale}]
+        window {
+          width <= [@game, :width, on_read: ->(width) { width * @game.scale }]
+          height <= [@game, :height, on_read: ->(height) { height * @game.scale }]
           title 'Ruby Go'
           resizable false
 
@@ -202,17 +202,17 @@ class Rubygo
               vertical_box {
                 stretchy false
                 label {
-                  text <= [@game, :black_captures, on_read: -> (val) {"Black Captures: #{val}"}]
+                  text <= [@game, :black_captures, on_read: -> (val) { "Black Captures: #{val}" }]
                 }
                 label{
-                  text <= [@game, :white_captures, on_read: -> (val) {"White Captures: #{val}"}]
+                  text <= [@game, :white_captures, on_read: -> (val) { "White Captures: #{val}" }]
                 }
               }
               label {}
               vertical_box{
                 stretchy false
                 label {
-                  text <= [@game, :cur_player, on_read: -> (player) {"Current Player: #{player == 1 ? "White" : "Black"}"}]
+                  text <= [@game, :cur_player, on_read: -> (player) { "Current Player: #{player == 1 ? "White" : "Black"}" }]
                 }
                 button('Pass Turn') {
                   on_clicked do
@@ -227,9 +227,9 @@ class Rubygo
                   on_clicked do
                     @game.revert_history
                   end
-                } 
+                }
                 button('Resign') {
-                } 
+                }
               }
             }
             vertical_box {

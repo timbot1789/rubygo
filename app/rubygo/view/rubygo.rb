@@ -98,6 +98,7 @@ class Rubygo
       def revert_history(turns = 1)
         history = []
         turns.times.each do
+          self.cur_player = -self.cur_player
           history = @history.pop
         end
         @tokens.each do |col|
@@ -304,7 +305,6 @@ class Rubygo
               new_game_window(on_create: on_create, height: @game.height, width: @game.width).show
             end
           }
-          menu_item('Load Game')
 
           # Enables quitting with CMD+Q on Mac with Mac Quit menu item
           quit_menu_item if OS.mac?
@@ -349,16 +349,18 @@ class Rubygo
               label {
                 text <= [@game, :cur_player, on_read: -> (player) {"Current Player: #{player == 1 ? "White" : "Black"}"}]
               }
-              button('Undo turn') {
-                on_clicked do
-                  @game.revert_history
-                  @game.cur_player = -@game.cur_player
-                end
-              } 
-              button('Pass Turn') {
-                on_clicked do
-                  @game.pass
-                end
+              vertical_box {
+                stretchy false
+                button('Undo turn') {
+                  on_clicked do
+                    @game.revert_history
+                  end
+                } 
+                button('Pass Turn') {
+                  on_clicked do
+                    @game.pass
+                  end
+                }
               }
             }
             vertical_box {

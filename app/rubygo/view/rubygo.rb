@@ -4,7 +4,7 @@ class Rubygo
   module Model
     class Game 
       
-      attr_accessor :height, :width, :scale, :name, :tokens, :cur_player, :game_over, :komi, :white_captures, :black_captures
+      attr_accessor :height, :width, :scale, :tokens, :cur_player, :game_over, :komi, :white_captures, :black_captures
       
       def initialize(height = 19, width = 19, scale = 85, name = "Go Game", white_score = 0, black_score = 0)
         @height = height

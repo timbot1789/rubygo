@@ -4,14 +4,13 @@ Score = Struct.new(:black, :white, :dame, :komi)
 class Rubygo
   module Model
     class Game
-      attr_accessor :height, :width, :scale, :tokens, :cur_player, :game_over, :komi, :white_score, :black_score
+      attr_accessor :height, :width, :tokens, :cur_player, :game_over, :komi, :white_score, :black_score
 
-      def initialize(height = 19, width = 19, scale = 90, white_score = 0, black_score = 0, komi = 0)
+      def initialize(height = 19, width = 19, white_score = 0, black_score = 0, komi = 0)
         @height = height
         @width = width
         @komi = komi
         @game_over = false
-        @scale = scale - width - height
         @white_score = white_score
         @black_score = black_score
         @history = []
@@ -59,7 +58,6 @@ class Rubygo
               self.black_score += 1 if cell.player == -1
             end
             cell.dead = false
-
           end
         end
       end

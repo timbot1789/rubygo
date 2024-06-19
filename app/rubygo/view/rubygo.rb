@@ -5,44 +5,45 @@ class Rubygo
     class GameBoard
       include Glimmer::LibUI::CustomControl
       option :game
+      option :scale
 
-      body{
+      body {
         vertical_box {
           padded false
           game.height.times.map do |row|
             horizontal_box {
               padded false
               game.width.times.map do |column|
-                half = game.scale / 2
+                half = scale / 2
                 area {
                   on_mouse_up { game.play(row, column) }
                   content(game.tokens[row][column], :player) {
                     token = game.tokens[row][column]
-                    square(0, 0, game.scale) {
+                    square(0, 0, scale) {
                       fill r: 240, g: 215, b: 141, a: 1.0
                     }
                     if (row % 3).zero? && (column % 3).zero? && row.odd? && column.odd?
                       circle(half, half, 4) { fill :black }
                     end
-                    line(half,row == 0 ? half : 0, half, row == (game.height - 1) ? half : game.scale) {
+                    line(half, row.zero? ? half : 0, half, row == (game.height - 1) ? half : scale) {
                       stroke 0x000000
                     }
-                    line(column == 0 ? half : 0, half, column == (game.width - 1) ? half : game.scale, half) {
+                    line(column.zero? ? half : 0, half, column == (game.width - 1) ? half : scale, half) {
                       stroke 0x000000
                     }
                     if token.player == 1
-                      circle(half, half, half - 12) {
+                      circle(half, half, half - 7) {
                         fill :white
                       }
                     elsif token.player == -1
-                      circle(half, half, half - 12) {
+                      circle(half, half, half - 7) {
                         fill :black
                       }
                     end
-                    line(0, 0, game.scale, game.scale) {
+                    line(0, 0, scale, scale) {
                       stroke <= [game.tokens[row][column], :dead, on_read: ->(dead) { dead ? :red : nil }]
                     }
-                    line(0, game.scale, game.scale, 0) {
+                    line(0, scale, scale, 0) {
                       stroke <= [game.tokens[row][column], :dead, on_read: ->(dead) { dead ? :red : nil }]
                     }
                   }
@@ -110,24 +111,43 @@ class Rubygo
   module View
     class GameOverWindow
       include Glimmer::LibUI::CustomWindow
-      option :score, default: lambda {}
+      option :get_score, default: lambda {}
       option :resume, default: lambda {}
+      option :score
 
       body {
         window { |game_over_window|
           title "Game Over"
           margined true
           vertical_box {
-            label("Game Over. Mark dead stones")
-            button("Score Game") {
-              on_clicked do
-                score.call
-              end
-            }
-            button("Resume Game") {
-              on_clicked do
-                resume.call
-                game_over_window.destroy
+            content(self, :score) {
+              if self.score
+                vertical_box {
+                  label("Final Scores:")
+                  label {
+                    text <= [self[:score], :black, on_read: ->(score){ "Black Territory: #{score}" }]
+                  }
+                  label {
+                    text <= [self[:score], :white, on_read: ->(score){ "White Territory: #{score}" }]
+                  }
+                  label {
+                    text <= [self[:score], :dame, on_read: ->(score){ "Dame(Contested) Territory: #{score}" }]
+                  }
+                  label("Winner: #{self[:score].black > self[:score].white ? 'Black!' : 'White!'}")
+                }
+              else
+                label("Game Over. Mark dead stones")
+                button("Score Game") {
+                  on_clicked do
+                    self.score = get_score.call
+                  end
+                }
+                button("Resume Game") {
+                  on_clicked do
+                    resume.call
+                    game_over_window.destroy
+                  end
+                }
               end
             }
           }
@@ -144,6 +164,7 @@ class Rubygo
 
       before_body do
         @game = Model::Game.new
+        @scale = 50
 
         menu('Game') {
           menu_item('New Game') {
@@ -180,14 +201,14 @@ class Rubygo
           resume = lambda {
             @game.resume
           }
-          game_over_window(score: score, resume: resume).show if game_over
+          game_over_window(get_score: score, resume: resume).show if game_over
         end
       end
 
       body {
         window {
-          width <= [@game, :width, on_read: ->(width) { width * @game.scale }]
-          height <= [@game, :height, on_read: ->(height) { height * @game.scale }]
+          width <= [@game, :width, on_read: ->(width) { width * @scale }]
+          height <= [@game, :height, on_read: ->(height) { height * @scale }]
           title 'Ruby Go'
           resizable false
 
@@ -230,7 +251,7 @@ class Rubygo
             }
             vertical_box {
               content(@game, :tokens) {
-                game_board(game: @game)
+                game_board(game: @game, scale: @scale)
               }
             }
           }

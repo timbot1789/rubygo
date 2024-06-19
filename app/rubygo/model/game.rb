@@ -49,35 +49,38 @@ class Rubygo
             cell.dead = false
           end
         end
-
       end
 
-      def find_group(group)
+      def find_liberty(group)
         cell = group.last
-        return [] if cell.row > 0 && @tokens[cell.row - 1][cell.column].player.zero?
-        return [] if cell.column > 0 && @tokens[cell.row][cell.column - 1].player.zero?
-        return [] if cell.row < (@height - 1) && @tokens[cell.row + 1][cell.column].player.zero?
-        return [] if cell.column < (@width - 1) && @tokens[cell.row][cell.column + 1].player.zero?
-
+        player = cell.player
         row = cell.row
         col = cell.column
-        player = cell.player
-        if (row > 0) && (@tokens[row - 1][col].player == player) && (!group.include? @tokens[row - 1][col])
-          up = find_group(group.push(@tokens[row - 1][col]))
+
+        # Check own liberties
+        return [] if row.positive? && @tokens[row - 1][col].player.zero?
+        return [] if col.positive? && @tokens[row][col - 1].player.zero?
+        return [] if row < (@height - 1) && @tokens[row + 1][col].player.zero?
+        return [] if col < (@width - 1) && @tokens[row][col + 1].player.zero?
+
+        # Check group liberties
+        if row.positive? && (@tokens[row - 1][col].player == player) && (!group.include? @tokens[row - 1][col])
+          up = find_liberty(group.push(@tokens[row - 1][col]))
           return [] if up.empty?
         end
-        if (col > 0) && (@tokens[row][col - 1].player == player) && (!group.include? @tokens[row][col - 1])
-          left = find_group(group.push(@tokens[row][col - 1]))
+        if col.positive? && (@tokens[row][col - 1].player == player) && (!group.include? @tokens[row][col - 1])
+          left = find_liberty(group.push(@tokens[row][col - 1]))
           return [] if left.empty?
         end
         if (row < (@height - 1)) && (@tokens[row + 1][col].player == player) && (!group.include? @tokens[row + 1][col])
-          down = find_group(group.push(@tokens[row + 1][col]))
+          down = find_liberty(group.push(@tokens[row + 1][col]))
           return [] if down.empty?
         end
         if (col < (@width - 1)) && (@tokens[row][col + 1].player == player) && (!group.include? @tokens[row][col + 1])
-          right = find_group(group.push(@tokens[row][col + 1]))
+          right = find_liberty(group.push(@tokens[row][col + 1]))
           return [] if right.empty?
         end
+
         group
       end
 
@@ -98,7 +101,7 @@ class Rubygo
       end
 
       def suicide?(cell)
-        capture_group = find_group([cell])
+        capture_group = find_liberty([cell])
         !capture_group.empty?
       end
 
@@ -155,17 +158,17 @@ class Rubygo
         row = cell.row
         col = cell.column
         player = cell.player
-        if row > 0 && (@tokens[row - 1][col].player == -player)
-          to_capture.concat find_group([@tokens[row - 1][col]])
+        if row.positive? && (@tokens[row - 1][col].player == -player)
+          to_capture.concat find_liberty([@tokens[row - 1][col]])
         end
-        if (col > 0) && (!to_capture.include? @tokens[row][col - 1]) && (@tokens[row][col - 1].player == -player)
-          to_capture.concat find_group([@tokens[row][col - 1]])
+        if col.positive? && (!to_capture.include? @tokens[row][col - 1]) && (@tokens[row][col - 1].player == -player)
+          to_capture.concat find_liberty([@tokens[row][col - 1]])
         end
         if (row < (@height - 1)) && (!to_capture.include? @tokens[row + 1][col]) && (@tokens[row + 1][col].player == -player)
-          to_capture.concat find_group([@tokens[row + 1][col]])
+          to_capture.concat find_liberty([@tokens[row + 1][col]])
         end
         if (col < (@width - 1)) && (!to_capture.include? @tokens[row][col + 1]) && (@tokens[row][col + 1].player == -player)
-          to_capture.concat find_group([@tokens[row][col + 1]])
+          to_capture.concat find_liberty([@tokens[row][col + 1]])
         end
         to_capture.each { |captured| captured.player = 0 }
         to_capture

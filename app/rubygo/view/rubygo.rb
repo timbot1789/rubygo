@@ -14,7 +14,7 @@ class Rubygo
             horizontal_box {
               padded false
               game.width.times.map do |column|
-                third = scale / 3
+                half = (scale / 2) - 1
                 area {
                   on_mouse_up { game.play(row, column) }
                   content(game.tokens[row][column], :player) {
@@ -23,27 +23,31 @@ class Rubygo
                       fill r: 240, g: 215, b: 141, a: 1.0
                     }
                     if (row % 3).zero? && (column % 3).zero? && row.odd? && column.odd?
-                      circle(third, third, 4) { fill :black }
+                      circle(half, half, 4) { fill :black }
                     end
-                    line(third, row.zero? ? third : 0, third, row == (game.height - 1) ? third : scale) {
+
+                    # vertical line
+                    line(half, (row.zero? ? half : 0), half, (row == (game.height - 1) ? half : scale)) {
                       stroke 0x000000
                     }
-                    line(column.zero? ? third : 0, third, column == (game.width - 1) ? third : scale, third) {
+
+                    # horizontal line
+                    line((column.zero? ? half : 0), half, (column == (game.width - 1) ? half : scale), half) {
                       stroke 0x000000
                     }
                     if token.player == 1
-                      circle(third, third, third) {
+                      circle(half, half, (3 * half) / 4) {
                         fill :white
                       }
                     elsif token.player == -1
-                      circle(third, third, third) {
+                      circle(half, half, (3 * half) / 4) {
                         fill :black
                       }
                     end
-                    line(0, 0, scale, scale) {
+                    line(half - ((3 * half) / 4), half - ((3 * half) / 4), half + ((3 * half) / 4), half + ((3 * half) / 4)) {
                       stroke <= [game.tokens[row][column], :dead, on_read: ->(dead) { dead ? :red : nil }]
                     }
-                    line(0, scale, scale, 0) {
+                    line(half - ((3 * half) / 4), half + ((3 * half) / 4), half + ((3 * half) / 4), half - ((3 * half) / 4)) {
                       stroke <= [game.tokens[row][column], :dead, on_read: ->(dead) { dead ? :red : nil }]
                     }
                   }

@@ -1,3 +1,4 @@
+require "byebug"
 require_relative '../model/game'
 
 class Rubygo
@@ -113,6 +114,7 @@ class Rubygo
       include Glimmer::LibUI::CustomWindow
       option :get_score, default: lambda {}
       option :resume, default: lambda {}
+      option :restart, default: lambda {}
       option :score
 
       body {
@@ -125,22 +127,26 @@ class Rubygo
                 vertical_box {
                   label("Final Scores:")
                   label {
-                    text <= [self[:score], :black, on_read: ->(score){ "Black Territory: #{score}" }]
+                    text <= [self.score, :black, on_read: ->(score){ "Black Territory: #{score}" }]
                   }
                   label {
-                    text <= [self[:score], :white, on_read: ->(score){ "White Territory: #{score}" }]
+                    text <= [self.score, :white, on_read: ->(score){ "White Territory: #{score}" }]
                   }
                   label {
-                    text <= [self[:score], :dame, on_read: ->(score){ "Dame(Contested) Territory: #{score}" }]
+                    text <= [self.score, :dame, on_read: ->(score){ "Dame(Contested) Territory: #{score}" }]
                   }
-                  label("Winner: #{self[:score].black > self[:score].white ? 'Black!' : 'White!'}")
+                  label("Winner: #{self.score.black > self.score.white ? 'Black!' : 'White!'}")
+                  button("New Game") {
+                    on_clicked do
+                      restart.call
+                      game_over_window.destroy
+                    end
+                  }
                 }
               else
                 label("Game Over. Mark dead stones")
                 button("Score Game") {
-                  on_clicked do
-                    self.score = get_score.call
-                  end
+                  on_clicked { self.score = get_score.call }
                 }
                 button("Resume Game") {
                   on_clicked do
@@ -216,7 +222,10 @@ class Rubygo
                 resume = lambda {
                   game.resume
                 }
-                game_over_window(get_score: score, resume: resume).show if game_over
+                restart = lambda {
+                  self.game = Model::Game.new(game.height, game.width)
+                }
+                game_over_window(get_score: score, resume: resume, restart: restart).show if game_over
               end
               horizontal_box {
                 stretchy false

@@ -127,7 +127,7 @@ class Rubygo
             dame_points += score_group.count if owner == 2
           end
         end
-        puts Score.new(black_points, white_points, dame_points, @komi)
+        Score.new(black_points, white_points, dame_points, @komi)
       end
 
       def find_liberty(group)

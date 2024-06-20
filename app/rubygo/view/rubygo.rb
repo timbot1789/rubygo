@@ -267,7 +267,7 @@ class Rubygo
                 vertical_box{
                   stretchy false
                   label {
-                    text <= [game, :cur_player, on_read: -> (player) { "Current Player: #{player == 1 ? "White" : "Black"}" }]
+                    text <= [game, :cur_player, on_read: -> (player) { "Current Player: #{player == 1 ? "White" : "Black"}#{game.handicap.positive? ? " (Handicap)" : ""}" }]
                   }
                   button('Pass Turn') {
                     on_clicked do

@@ -235,6 +235,7 @@ class Rubygo
         end
 
         return revert_history if suicide?(token) || ko?
+        return self.handicap -= 1 if self.handicap.positive?
 
         self.cur_player = -cur_player
       end

@@ -102,7 +102,6 @@ class Rubygo
       end
 
       def calc_score
-        puts "calculating score"
         seen = []
         black_points = @black_score
         white_points = @white_score

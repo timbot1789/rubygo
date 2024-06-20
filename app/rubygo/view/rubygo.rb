@@ -1,4 +1,3 @@
-require "byebug"
 require_relative '../model/game'
 
 class Rubygo
@@ -63,8 +62,11 @@ class Rubygo
     class NewGameWindow
       include Glimmer::LibUI::CustomWindow
       option :on_create, default: lambda { |game| }
-      option :height, default: 12
-      option :width, default: 12
+      option :new_height, default: 19
+      option :new_width, default: 19
+      option :black_handicap, default: 0
+      option :white_handicap, default: 0
+      option :komi, default: 0
 
       body {
         window { |new_game_window|
@@ -76,13 +78,35 @@ class Rubygo
                 horizontal_box {
                   label('Board Width')
                   spinbox(1, 20) {
-                    value <=> [self, :width]
+                    value <=> [self, :new_width]
                   }
                 }
                 horizontal_box {
                   label('Board Height')
                   spinbox(1, 20) {
-                    value <=> [self, :height]
+                    value <=> [self, :new_height]
+                  }
+                }
+              }
+            }
+            group("Handicaps") {
+              vertical_box {
+                horizontal_box {
+                  label('Black Handicap')
+                  spinbox(0, 20) {
+                    value <=> [self, :black_handicap]
+                  }
+                }
+                horizontal_box {
+                  label('White Handicap')
+                  spinbox(0, 20) {
+                    value <=> [self, :white_handicap]
+                  }
+                }
+                horizontal_box {
+                  label('Komi')
+                  spinbox(0, 20) {
+                    value <=> [self, :komi]
                   }
                 }
               }
@@ -96,7 +120,7 @@ class Rubygo
               }
               button("New Game") {
                 on_clicked do
-                  on_create.call(height, width)
+                  on_create.call(new_height, new_width)
                   new_game_window.destroy
                 end
               }
@@ -181,7 +205,7 @@ class Rubygo
               on_create = lambda { |height, width|
                 self.game = Model::Game.new(height, width)
               }
-              new_game_window(on_create: on_create, height: game.height, width: game.width).show
+              new_game_window(on_create: on_create, new_height: game.height, new_width: game.width).show
             end
           }
 

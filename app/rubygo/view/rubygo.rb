@@ -64,8 +64,8 @@ class Rubygo
       option :on_create, default: lambda { |game| }
       option :new_height, default: 19
       option :new_width, default: 19
-      option :black_handicap, default: 0
-      option :komi, default: "0"
+      option :handicap, default: 0
+      option :komi, default: "0.5"
 
       body {
         window { |new_game_window|
@@ -95,7 +95,7 @@ class Rubygo
                 horizontal_box {
                   label('Black Handicap')
                   spinbox(0, 20) {
-                    value <=> [self, :black_handicap]
+                    value <=> [self, :handicap]
                   }
                 }
                 horizontal_box {
@@ -115,7 +115,7 @@ class Rubygo
               }
               button("New Game") {
                 on_clicked do
-                  on_create.call(new_height, new_width)
+                  on_create.call(new_height, new_width, handicap, komi.to_f)
                   new_game_window.destroy
                 end
               }
@@ -144,7 +144,10 @@ class Rubygo
             content(self, :score) {
               if self.score
                 vertical_box {
-                  label("Final Scores:")
+                  black = score.black
+                  white = score.white + score.komi
+                  winner = (black > white) ? 'Black!' : (white > black) ? 'White!' : 'Tie!'
+                  label("Final Scores")
                   label {
                     text <= [self.score, :black, on_read: ->(score){ "Black Territory: #{score}" }]
                   }
@@ -154,7 +157,10 @@ class Rubygo
                   label {
                     text <= [self.score, :dame, on_read: ->(score){ "Dame(Contested) Territory: #{score}" }]
                   }
-                  label("Winner: #{self.score.black > self.score.white ? 'Black!' : 'White!'}")
+                  label {
+                    text <= [self.score, :komi, on_read: ->(score){ "Komi: #{score}" }]
+                  }
+                  label("Winner: #{winner}")
                   button("New Game") {
                     on_clicked do
                       restart.call
@@ -197,10 +203,10 @@ class Rubygo
         menu('Game') {
           menu_item('New Game') {
             on_clicked do
-              on_create = lambda { |height, width|
-                self.game = Model::Game.new(height, width)
+              on_create = lambda { |height, width, handicap, komi|
+                self.game = Model::Game.new(height, width, handicap, komi)
               }
-              new_game_window(on_create: on_create, new_height: game.height, new_width: game.width).show
+              new_game_window(on_create: on_create, new_height: game.height, new_width: game.width, handicap: game.handicap, komi: game.komi.to_s).show
             end
           }
 
@@ -242,7 +248,7 @@ class Rubygo
                   game.resume
                 }
                 restart = lambda {
-                  self.game = Model::Game.new(game.height, game.width)
+                  self.game = Model::Game.new(game.height, game.width, game.handicap, game.komi)
                 }
                 game_over_window(get_score: score, resume: resume, restart: restart).show if game_over
               end

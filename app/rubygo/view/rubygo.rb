@@ -190,6 +190,39 @@ end
 
 class Rubygo
   module View
+    class ResignWindow 
+      include Glimmer::LibUI::CustomWindow
+      option :resignation
+      option :resume, default: lambda {}
+      option :restart, default: lambda {}
+
+      body {
+        window { |game_over_window|
+          title "Game Over"
+          margined true
+          vertical_box {
+            label("Game Over. #{resignation == 1 ? 'White' : 'Black'} resigned")
+            button("New Game") {
+              on_clicked do 
+                restart.call
+                game_over_window.destroy
+              end
+            }
+            button("Resume Game") {
+              on_clicked do
+                resume.call
+                game_over_window.destroy
+              end
+            }
+          }
+        }
+      }
+    end
+  end
+end
+
+class Rubygo
+  module View
     class Rubygo
       include Glimmer::LibUI::Application
       option :game
@@ -250,7 +283,13 @@ class Rubygo
                 restart = lambda {
                   self.game = Model::Game.new(game.height, game.width, game.handicap, game.komi)
                 }
-                game_over_window(get_score: score, resume: resume, restart: restart).show if game_over
+                if game_over
+                  if game.resigned
+                    resign_window(resignation: game.resigned, restart: restart, resume: resume).show
+                  else
+                    game_over_window(get_score: score, resume: resume, restart: restart).show
+                  end
+                end
               end
               horizontal_box {
                 stretchy false
@@ -284,6 +323,9 @@ class Rubygo
                     end
                   }
                   button('Resign') {
+                    on_clicked do
+                      game.resign
+                    end
                   }
                 }
               }

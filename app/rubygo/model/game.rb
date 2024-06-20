@@ -4,7 +4,7 @@ Score = Struct.new(:black, :white, :dame, :komi)
 class Rubygo
   module Model
     class Game
-      attr_accessor :height, :width, :tokens, :cur_player, :game_over, :komi, :white_score, :black_score, :handicap
+      attr_accessor :height, :width, :tokens, :cur_player, :game_over, :komi, :white_score, :black_score, :handicap, :resigned
 
       def initialize(height = 19, width = 19, handicap = 0, komi = 0.5)
         @height = height
@@ -52,6 +52,7 @@ class Rubygo
 
       def resume
         self.game_over = false
+        self.resigned = nil
         @tokens.each do |col|
           col.each do |cell|
             if cell.dead
@@ -61,6 +62,11 @@ class Rubygo
             cell.dead = false
           end
         end
+      end
+
+      def resign
+        self.resigned = self.cur_player
+        self.game_over = true
       end
 
       def find_score_group(group)
@@ -210,12 +216,13 @@ class Rubygo
       def play(row, column)
         @has_passed = false
         token = tokens[row][column]
+        return if resigned
         if game_over && token.player != 0
           self.white_score -= 1 if token.player == 1
           self.black_score -= 1 if token.player == -1
           return token.dead = !token.dead
         end
-        return unless token.player.zero?
+        return unless token.player.zero? && !game_over
 
         token.player = cur_player
         captured = capture(token)

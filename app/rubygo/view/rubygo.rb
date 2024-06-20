@@ -65,8 +65,7 @@ class Rubygo
       option :new_height, default: 19
       option :new_width, default: 19
       option :black_handicap, default: 0
-      option :white_handicap, default: 0
-      option :komi, default: 0
+      option :komi, default: "0"
 
       body {
         window { |new_game_window|
@@ -74,6 +73,7 @@ class Rubygo
           margined true
           vertical_box {
             group("Game Size") {
+              margined true
               vertical_box {
                 horizontal_box {
                   label('Board Width')
@@ -90,6 +90,7 @@ class Rubygo
               }
             }
             group("Handicaps") {
+              margined true
               vertical_box {
                 horizontal_box {
                   label('Black Handicap')
@@ -98,15 +99,9 @@ class Rubygo
                   }
                 }
                 horizontal_box {
-                  label('White Handicap')
-                  spinbox(0, 20) {
-                    value <=> [self, :white_handicap]
-                  }
-                }
-                horizontal_box {
                   label('Komi')
-                  spinbox(0, 20) {
-                    value <=> [self, :komi]
+                  entry {
+                    text <=> [self, :komi]
                   }
                 }
               }

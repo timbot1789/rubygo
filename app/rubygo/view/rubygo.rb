@@ -243,8 +243,8 @@ class Rubygo
       before_body do
         self.game = Model::Game.new
         @scale = 45
-        @min_width = 450
-        @min_height = 450
+        @min_width = 700
+        @min_height = 750
 
         menu('Game') {
           menu_item('New Game') {

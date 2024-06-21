@@ -221,7 +221,7 @@ class Rubygo
           vertical_box {
             label("Game Over. #{resignation == 1 ? 'White' : 'Black'} resigned")
             button("New Game") {
-              on_clicked do 
+              on_clicked do
                 restart.call
                 game_over_window.destroy
               end
@@ -324,7 +324,10 @@ class Rubygo
                 vertical_box{
                   stretchy false
                   label {
-                    text <= [game, :cur_player, on_read: -> (player) { "Current Player: #{player == 1 ? "White" : "Black"}#{game.handicap.positive? ? " (Handicap)" : ""}" }]
+                    text <= [game, :cur_player, on_read: -> (player) { "Current Player: #{player == 1 ? "White" : "Black"}" }]
+                  }
+                  label {
+                    text <= [game, :handicap, on_read: -> (handicap) {handicap > 0 ? "Handicap: #{handicap}" : ""}]
                   }
                   button('Pass Turn') {
                     on_clicked do

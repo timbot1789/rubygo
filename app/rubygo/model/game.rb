@@ -196,7 +196,8 @@ class Rubygo
 
           player = history[:player]
           self.cur_player = player
-          next unless history[:action] == :play
+          next unless history[:action] == :play || history[:action] == :handicap
+          self.handicap += 1 if history[:action] == :handicap
 
           row, column = history[:play]
           tokens[row][column].player = 0
@@ -228,7 +229,7 @@ class Rubygo
         captured = capture(token)
         turn = {
           player: cur_player,
-          action: :play,
+          action: self.handicap.positive? ? :handicap : :play,
           play: [row, column],
           captures: captured.map(&:clone)
         }

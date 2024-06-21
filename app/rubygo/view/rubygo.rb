@@ -8,6 +8,10 @@ class Rubygo
       option :scale
 
       body {
+        row_center = game.height / 2
+        col_center = game.height / 2
+        row_dot_distance = game.height < 7 ? nil : (game.height < 13 ? 2 : 3)
+        col_dot_distance = game.width < 7 ? nil : (game.width < 13 ? 2 : 3)
         vertical_box {
           padded false
           game.height.times.map do |row|
@@ -22,7 +26,17 @@ class Rubygo
                     square(0, 0, scale) {
                       fill r: 240, g: 215, b: 141, a: 1.0
                     }
-                    if (row % 3).zero? && (column % 3).zero? && row.odd? && column.odd?
+
+                    # Dynamically set board dots
+                    if ((game.height.odd? && row == row_center) && (game.width.odd? && column == col_center)) ||
+                       (row == row_dot_distance && column == col_dot_distance) ||
+                       (game.height > 13 && (column == col_dot_distance && row == row_center)) ||
+                       (game.width > 13 && (row == row_dot_distance && column == col_center)) ||
+                       (row_dot_distance && game.width > 13 && (row + row_dot_distance + 1 == game.height && column == col_center)) ||
+                       (row_dot_distance && (row + row_dot_distance + 1) == game.height && column == col_dot_distance) ||
+                       (col_dot_distance && game.height > 13 && (column + col_dot_distance + 1) == game.width && row == row_center) ||
+                       (col_dot_distance && row_dot_distance && (column + col_dot_distance + 1) == game.width && row == row_dot_distance) ||
+                       (col_dot_distance && row_dot_distance && (column + col_dot_distance + 1) == game.width && (row + row_dot_distance + 1) == game.height)
                       circle(half, half, 4) { fill :black }
                     end
 
@@ -150,7 +164,7 @@ class Rubygo
                 vertical_box {
                   black = score.black
                   white = score.white + score.komi
-                  winner = (black > white) ? 'Black!' : (white > black) ? 'White!' : 'Tie!'
+                  winner = (black > white) ? 'Black ' + (black - white).to_s : (white > black) ? 'White' + (white - black).to_s  : 'Tie!'
                   label("Final Scores")
                   label {
                     text <= [self.score, :black, on_read: ->(score){ "Black Territory: #{score}" }]
@@ -233,7 +247,7 @@ class Rubygo
 
       before_body do
         self.game = Model::Game.new
-        @scale = 50
+        @scale = 45
         @min_width = 450
         @min_height = 450
 

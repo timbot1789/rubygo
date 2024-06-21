@@ -80,8 +80,7 @@ class Rubygo
     class NewGameWindow
       include Glimmer::LibUI::CustomWindow
       option :on_create, default: lambda { |game| }
-      option :new_height, default: 19
-      option :new_width, default: 19
+      option :new_size, default: 19
       option :handicap, default: 0
       option :komi, default: "0.5"
 
@@ -91,19 +90,15 @@ class Rubygo
           margined true
           vertical_box {
             group("Game Size") {
-              margined true
               vertical_box {
                 horizontal_box {
-                  label('Board Width')
+                  label('Board Size')
                   spinbox(1, 20) {
-                    value <=> [self, :new_width]
+                    value <=> [self, :new_size]
                   }
                 }
                 horizontal_box {
-                  label('Board Height')
-                  spinbox(1, 20) {
-                    value <=> [self, :new_height]
-                  }
+                  label {}
                 }
               }
             }
@@ -133,7 +128,7 @@ class Rubygo
               }
               button("New Game") {
                 on_clicked do
-                  on_create.call(new_height, new_width, handicap, komi.to_f)
+                  on_create.call(new_size, new_size, handicap, komi.to_f)
                   new_game_window.destroy
                 end
               }
@@ -316,7 +311,7 @@ class Rubygo
                   label {
                     text <= [game, :black_score, on_read: -> (val) { "Black Score: #{val}" }]
                   }
-                  label{
+                  label {
                     text <= [game, :white_score, on_read: -> (val) { "White Score: #{val}" }]
                   }
                 }

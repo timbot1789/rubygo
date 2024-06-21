@@ -159,7 +159,7 @@ class Rubygo
                 vertical_box {
                   black = score.black
                   white = score.white + score.komi
-                  winner = (black > white) ? 'Black ' + (black - white).to_s : (white > black) ? 'White' + (white - black).to_s  : 'Tie!'
+                  winner = (black > white) ? 'Black ' + (black - white).to_s : (white > black) ? 'White ' + (white - black).to_s  : 'Tie!'
                   label("Final Scores")
                   label {
                     text <= [self.score, :black, on_read: ->(score){ "Black Territory: #{score}" }]

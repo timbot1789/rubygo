@@ -10,6 +10,14 @@ You must have Ruby version 3.3.2 installed
 2. `cd` into the repository and run `bundle install`
 3. From the root of the repository run `bin/rubygo`
 
+### Customizing the Game
+You can customize the game from the Game -> New Game Dropdown.
+Available customizations are:
+
+1. Board Size: The dimensions of the board
+2. Black Handicap: How many additional stones black gets to place on the board before the game begins (default 0)
+3. Komi: End of game bonus points awarded to white to compensate them for going second (default 0.5)
+
 
 Contributing to rubygo
 ------------------------------------------

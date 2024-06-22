@@ -11,5 +11,3 @@ group :development do
   gem 'juwelier', '2.4.9'
   gem 'simplecov', '>= 0'
 end
-
-gem "byebug", "~> 11.1"

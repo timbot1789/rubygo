@@ -1,6 +1,15 @@
-rubygo===================
+# Rubygo
 
-Description goes here.
+A simple app for playing Go games with a friend, built on LibUI.
+
+### Prerequisites
+You must have Ruby version 3.3.2 installed
+
+### Running the game
+1. Clone the repository
+2. `cd` into the repository and run `bundle install`
+3. From the root of the repository run `bin/rubygo`
+
 
 Contributing to rubygo
 ------------------------------------------
